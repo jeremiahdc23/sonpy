@@ -1400,7 +1400,7 @@ class sonnet(object):
             fd.writelines(contents)
             fd.truncate()
 
-'''
+    '''
     # UNFINISHED PLOTTING FUNCTION
     def plotData(self, ydata, run=1):
         # Look for a csv file containing data, and plot ydata vs. frequency.
@@ -1441,7 +1441,7 @@ class sonnet(object):
             while line !=
 
             # Collect plot data from the data block
-'''
+        '''
 
 
     ########################################################################
