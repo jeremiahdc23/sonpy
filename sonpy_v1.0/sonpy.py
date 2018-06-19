@@ -2174,6 +2174,7 @@ class sonnet(object):
 
         try:
             self.em_process = subprocess.Popen(args, stdout=subprocess.PIPE)
+            self.em_process.wait()
             self.run_count = self.run_count + 1
         except:
             print("Error! Can't start process, use setSonnetInstallationPath(path) to point the class to the location of your em.exe file")
@@ -2211,6 +2212,7 @@ class sonnet(object):
               self.sonnet_file_path + self.sonnet_file]) # file
         try:
             self.emstatus_process = subprocess.Popen(args, stdout=subprocess.PIPE)
+            self.emstatus_process.wait()
             self.run_count = self.run_count + 1
         except:
             print("Error! Can't start process, use setSonnetInstallationPath(path) to point the class to the location of your em.exe file")
