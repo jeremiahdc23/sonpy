@@ -1,19 +1,15 @@
 # -*- coding: utf-8 -*-
 
+__license__ = 'GNU General Public License 3.0'
+__docformat__ = 'reStructuredText'
+
 import subprocess
 import time
 import os
 from win32com.client import GetObject
 
-# PROGRAM:     SonPy
-# VERSION:     1.0 (June 14, 2018)
-# PURPOSE:     Python interface for Sonnet
-# LICENSE:     GNU General Public License 3.0
-# AUTHOR:      Niels Jakob Søe Loft (nsl@phys.au.dk)
-# DEVELOPMENT: Daniel Becerra, Bharath Kannan
-
 class Project():
-    # Only geometry projects is supported
+    # Only geometry projects are supported
     def __init__(self):
         self.preheader = None
         self.header = None
@@ -285,8 +281,16 @@ class Qsg():
         self.lines = []
 
 class sonnet(object):
-   # Class for interactions between Sonnet and Python
-   # Tested on Windows, can be extended to Linux (but not Mac)
+    """
+    Basic class for all interactions between Sonnet and Python, and for storing the Sonnet project. Start your interactions with SonPy by creating an instance of this class, like so:
+
+        >>> import sonpy
+        >>> snt = sonpy.sonnet()
+
+    All the functions of SonPy described in this API documention are functions defined in the :class:`sonnet` class.
+    """
+
+    # Tested on Windows, can be extended to Linux (but not Mac)
 
     def __init__(self):
         # Settings for em simulator
@@ -329,25 +333,60 @@ class sonnet(object):
     ########################################################################
 
     def setSonnetInstallationPath(self, path):
+        """
+        Sets the path of the Sonnet installation.
+
+        :param str path: Path to Sonnet executables ``em.exe``, ``emstatus.exe`` and ``gds.exe``. Default is ``C:\\Program Files (x86)\\Sonnet Software\\14.54\\bin\\``.
+        """
         self.executable_path = path
         if self.executable_path[-1] != '\\':
             self.executable_path += '\\'
 
     def setSonnetFile(self, filename):
+        """
+        Sets the filename of the Sonnet project file.
+
+        :param str filename: Sonnet project file. Default is ``test.son``.
+        """
         self.sonnet_file = filename
 
     def setSonnetFilePath(self, path):
+        """
+        Sets the path of the Sonnet project file.
+
+        :param str path: Path to the Sonnet project file. Default is ``C:\\Users\\Lab\\Desktop\\sonnet_test\\``.
+        """
         self.sonnet_file_path = path
         if self.sonnet_file_path[-1] != '\\':
             self.sonnet_file_path += '\\'
 
     def setGdsFile(self, filename):
+        """
+        Sets the filename of the GDSII file. It furthermore sets the Sonnet project file and data file to the same name (but with extensions .son and .csv, respectively).
+
+        :param str filename: GDSII file. Default is ``test.gds``.
+
+        """
         self.gds_file = filename
         # Also set Sonnet and data file name
         self.setSonnetFile(self.gds_file[:-3] + 'son')
         self.setDataFile(self.gds_file[:-3] + 'csv')
 
     def setGdsFilePath(self, path):
+        """
+        Sets the path of the GDSII file. It furthermore sets the paths to the Sonnet project file and data file to the same path.
+
+        :param str path: Path to the GDSII file. Default is the Sonnet project path.
+
+        :Example:
+            Say you have ``myproject.gds`` that you want to use that as a starting point for a Sonnet project.
+
+            >>> import os
+            >>> snt.setGdsFilePath(os.getcwd()) # get current work directory
+            >>> snt.setGdsFile('myproject.gds')
+
+            SonPy will now associate ``myproject.son`` and ``myproject.csv`` (in the current directory) with the current project, even if these files do not exist yet.
+        """
         self.gds_file_path = path
         if self.gds_file_path[-1] != '\\':
             self.gds_file_path += '\\'
@@ -356,9 +395,19 @@ class sonnet(object):
         self.setDataFilePath(self.gds_file_path)
 
     def setDataFile(self, filename):
+        """
+        Sets the filename of the data file.
+
+        :param str filename: Data file. Default is the Sonnet project filename, but with the extension .csv instead of .son.
+        """
         self.data_file = filename
 
     def setDataFilePath(self, path):
+        """
+        Sets the filepath of the data file.
+
+        :param str path: Path to the data file. Default is the Sonnet project path.
+        """
         self.data_file_path = path
         if self.data_file_path[-1] != '\\':
             self.data_file_path += '\\'
@@ -368,11 +417,25 @@ class sonnet(object):
     ########################################################################
 
     def setTemplateFile(self, filename):
-        # Use another Sonnet Project File in the same directory as a template.
+        """
+        Sets an existing Sonnet project file (in the current directory) as template. When converting a GDSII file, the resulting Sonnet project file will inherit the settings of the template.
+
+        :param str filename: Filename of the template Sonnet project file.
+        """
         self.gds_translator_options = "-i{:s}".format(filename)
 
     def runGdsTranslator(self, silent=False):
-        # Run Sonnet's gds to Sonnet Project File translator
+        """
+        Runs Sonnet's GDSII file to Sonnet project file translator. A Sonnet project file with the same name as the GDSII file is created in the same directory.
+
+        After the translation process has run, the following functions are called:
+
+        1. :func:`readProject()`: Reads the created Sonnet project file into SonPy.
+        2. :func:`collapseDlayers()`: Removes empty dielectric layers.
+        3. :func:`cropBox()`: Crops the bounding box to the edge of the circuit.
+
+        :param bool silent: Toggle wait message.
+        """
 
         # Verify gds file exists
         file_found = 0
@@ -415,6 +478,9 @@ class sonnet(object):
     ########################################################################
 
     def readProject(self):
+        """
+        Reads the Sonnet project file into SonPy. This function is run in :func:`runGdsTranslator` to ensure the created Sonnet project file is read into SonPy for further manipulation.
+        """
 
         # Initialize Sonnet project
         project = Project()
@@ -937,7 +1003,14 @@ class sonnet(object):
                     line = fd.readline()
 
     def printLayers(self):
-        # Print the layer configuration of the circuit
+        """
+        Prints the layer configuration of the project to the command prompt. For each dielectric layer the following is printed::
+
+            Dielectric layer:  dlayer_index (name)
+            Technology layer:  tlayer_index (tlayer_type)
+            Port:              portnum (port_type)
+            Component:         name (component_type)
+        """
 
         print("\n================== TOP ==================\n")
         for dlayer in self.project.geo.dlayers:
@@ -953,7 +1026,11 @@ class sonnet(object):
         print("\n================== GND ==================\n")
 
     def printParameters(self):
-        # Print the defined variable parameters and sweeps set in the project
+        """
+        Prints the defined variable parameters and sweeps set in the project to the command prompt. The frequency/parameter sweeps printed out will run in the Sonnet simulation, and data will be written to the set data file. Variables are printed in following form::
+
+            varname (unittype)
+        """
 
         print("\nVariables:")
         if len(self.project.geo.valvars) == 0:
@@ -984,7 +1061,9 @@ class sonnet(object):
         print("\n")
 
     def printProject(self):
-        # Print project to the Sonnet Project File
+        """
+        Prints (overwrites) the Sonnet project with the changes made in SonPy to the Sonnet project file. This function runs before the Sonnet simulation to ensure any changes made in SonPy are recorded in the Sonnet project file Sonnet's simulation software reads.
+        """
 
         with open(self.sonnet_file_path + self.sonnet_file, 'w') as fd:
 
@@ -1241,6 +1320,17 @@ class sonnet(object):
     ########################################################################
 
     def cropBox(self, xcellsize=1, ycellsize=1):
+        """
+        Crops the bounding box (used in Sonnet to confine the simulation space) to the circuit of the circuit.
+
+        :param xcellsize: Cellsize in x direction.
+        :param ycellsize: Cellsize in y direction.
+        :type xcellsize: float
+        :type ycellsize: float
+
+        """
+
+        # Technical description for delevopers:
         # Crops the BOX to the circuit and set the cellsize in x and y direction, and
         # sets the local origin (LORGN in GEO block) in order to place point correctly
         # If the circuit is rectangular, this ensures that ports added to the
@@ -1291,7 +1381,74 @@ class sonnet(object):
                 component.toppos += -ymin
                 component.bottompos += -ymin
 
+    # def mergePolygons(self):
+    #     """
+    #     Merges all adjacent polygons. This operations reduces the number of polygons thereby saving simulation time, but it does not changed the physical system or the simulation results.
+    #     """
+    #
+    #     for dlayer in self.project.geo.dlayers:
+    #         for tlayer in dlayer.tlayers:
+    #             adjacentPolygons = []
+    #             polygons = tlayer.polygons
+    #             # Loop over pairs of different polygons
+    #             for i in range(0, len(polygons)):
+    #                 # Primary polygon
+    #                 x_pri = [xvertex for [xvertex, yvertex] in polygons[i].vertices]
+    #                 y_pri = [yvertex for [xvertex, yvertex] in polygons[i].vertices]
+    #                 for j in range(i + 1, len(polygons)):
+    #                     # Secondary polygon
+    #                     for vertex in range(0, polygons[j].nvertices - 1):
+    #                         x = polygon.vertices[vertex][0]
+    #                         y = polygon.vertices[vertex][1]
+    #                         # Check if point is within primary polygon (quick test)
+    #                         if x >= min(x_pri) and x <= max(x_pri) and \
+    #                            y >= min(y_pri) and y <= max(y_pri):
+    #                             # Check if point lies along primary polygon edge (slow test)
+    #                             for
+    #
+    #
+    #                         x0 = polygon.vertices[vertex][0]
+    #                         y0 = polygon.vertices[vertex][1]
+    #                         x1 = polygon.vertices[vertex + 1][0]
+    #                         y1 = polygon.vertices[vertex + 1][1]
+    #
+    #                 # Primary polygon
+    #                 x_pri = [xvertex for [xvertex, yvertex] in polygons[i].vertices]
+    #                 y_pri = [yvertex for [xvertex, yvertex] in polygons[i].vertices]
+    #                 for j in range(i + 1, len(polygons)):
+    #                     # Secondary polygon
+    #                     x_sec = [xvertex for [xvertex, yvertex] in polygons[j].vertices]
+    #                     y_sec = [yvertex for [xvertex, yvertex] in polygons[j].vertices]
+    #                     # If they cannot be adjacent then skip this pair...
+    #                     if min(x_sec) > max(x_pri) or max(x_sec) < min(x_pri) or \
+    #                        min(y_sec) > max(y_pri) or max(y_sec) < min(y_pri):
+    #                         break
+    #                     # ...else we see if vertex points of the primary polygon
+    #                     # lie on any of the primary polygon edges
+    #                     else:
+    #                         for k in range()
+    #
+    #                     # MAIN PROBLEM: How to make sure that all connected polygons get merged?
+    #
+    #
+    #
+    #                     for
+    #                     # Check if point is within primary polygon (quick test)
+    #                     if x >= xmin and x <= xmax and \
+    #                        y >= ymin and y <= ymax:
+    #                         # Check if point lies along primary polygon edge (slow test)
+    #
+    #
+    # 
+    #
+    #                 # Update nvertices of the polygon
+    #
+    #                 # Update npoly in the GEO block
+
+
     def mapPoint(self, xcoord, ycoord):
+        # Internal use only.
+
         # Sonnet computes points relative to the circuit's upper left corner (ULC),
         # but it's easier for the user to specify points relative to the lower
         # left corner (LLC). This function takes an input point (xcoord, ycoord)
@@ -1307,6 +1464,25 @@ class sonnet(object):
         return xcoord, (max(yvertices) - min(yvertices)) - ycoord
 
     def addPort(self, xcoord, ycoord, xmargin=0.005, ymargin=0.005, **kwargs):
+        """
+        Adds a port (of standard type). Since Sonnet's GDSII translator ever so slightly shifts the coordinates used in the GDSII file it is often necessary to look for attachment points with a small margin. For instance, say you originally planned to add a port at the edge of your circuit at (0, 100). After the GDSII file has been translated into a Sonnet project file, this points has shifted to, say, (0, 99.997). Trying to add the port at (0, 100) will throw an error because this point is no longer at the edge of the circuit (or any of the polygons). Looking for possible attachment points (i.e. polygon edges) with a small margin will find to correct point (0, 99.997).
+
+        :param float xcoord: Attachment x coordinate.
+        :param float ycoord: Attachment y coordinate.
+        :param float xmargin: Margin in x direction.
+        :param float ymargin: Margin in y direction.
+
+        Keyword arguments:
+
+        :param float resist: Port parameter defined in [Son15]_ under POR1.
+        :param float react: Port parameter defined in [Son15]_ under POR1.
+        :param float induct: Port parameter defined in [Son15]_ under POR1.
+        :param float capac: Port parameter defined in [Son15]_ under POR1.
+        :param tlayer_index: Restrict the search for attachment points to a single or list of technology layers (useful if several technology layers have overlapping polygon edges at the attachment point).
+        :type tlayer_index: int or list of ints
+        """
+
+        # Technical description for delevopers:
         # Add a POR1 STD definition in the GEO block
         # The DIAGALLOWED line is not supported
         # The default port number is the number of existing ports (including
@@ -1358,7 +1534,7 @@ class sonnet(object):
                 raise self.exception("Invalid keyword argument.")
 
         # Look for possible attachment points within the search tlayers
-        # (Remember that we are a now in Sonnets coordiante system where
+        # (Remember that we are a now in Sonnets coordinate system where
         # all points are relative the the circuit's upper left corner)
         candidateAttachments = []
         for tlayer in searchTlayers:
@@ -1421,6 +1597,29 @@ class sonnet(object):
         self.project.geo.dlayers[ilevel].ports.append(port)
 
     def addComponent(self, x1, y1, x2, y2, tlayer_index, component_type="ind", value=10, xmargin=0.005, ymargin=0.005, **kwargs):
+        """
+        Adds an ideal component. Attachment point margins are the same as for :func:`addPort`.
+
+        :param float x1: Attachment x coordinate for the first port.
+        :param float y1: Attachment y coordinate for the first port.
+        :param float x2: Attachment x coordinate for the second port.
+        :param float y2: Attachment y coordinate for the second port.
+        :param float xmargin: Margin in x direction.
+        :param float ymargin: Margin in y direction.
+        :param int tlayer_index: Index (gds stream number) of the technology layer the component will live in.
+        :param str component_type: Type of component. Should be ``"ind"`` (inductor), ``"cap"`` (capacitor) or ``"res"`` (resistor).
+        :param float value: Value of the component in units suitable for the component type.
+
+        Keyword arguments:
+
+        :param str name: Name for the component. Default is ``L``, ``C``, ``R`` followed by a number for inductors, capacitors and resistors. For instance, the first ideal capacitor is named ``"L1"``, the next ``"L2"`` ect.
+        :param int smdp1_portnum: Port number for first port, see [Son15]_ under SMD. Default is the number of existing ports + 1.
+        :param int smdp1_pinnum: See [Son15]_ under SMD.
+        :param int smdp2_portnum: Port number for second port, see [Son15]_ under SMD. Default is the number of existing ports + 2.
+        :param int smdp2_pinnum: See [Son15]_ under SMD.
+        """
+
+        # Technical description for delevopers:
         # Adds a SMD definition of TYPE IDEAL in the GEO block (after LORGN)
         # The component type is "ind" for inductor, "cap" for capacitor, or
         # "res" for resistor.
@@ -1481,7 +1680,7 @@ class sonnet(object):
             raise self.exception("No technology layer to attach to!")
 
         # Look for possible attachment points on nearby polygon edges
-        # (Remember that we are a now in Sonnets coordiante system where
+        # (Remember that we are a now in Sonnets coordinate system where
         # all points are relative the the circuit's upper left corner)
         candidateAttachments1 = []
         candidateAttachments2 = []
@@ -1651,9 +1850,11 @@ class sonnet(object):
         self.project.geo.dlayers[component.levelnum].components.append(component)
 
     def removeDlayer(self, dlayer_index=0):
-        # Remove a dielectric layer including any technology layers,
-        # ports or components that may reside in the layer.
-        # Any VIA technology layers that extend to this layer are also removed.
+        """
+        Removes a dielectric layer including any technology layers, ports or components that reside in the layer. Any via technology layers that extend to this dielectric layer are also removed.
+
+        :param int dlayer_index: Index of the layer that will be removed.
+        """
 
         if dlayer_index > len(self.project.geo.dlayers) - 1:
             raise self.error("Dlayer out of bound. Cannot remove non-existing layer.")
@@ -1685,8 +1886,9 @@ class sonnet(object):
         self.project.geo.box.nlev += -1
 
     def removeEmptyDlayers(self):
-        # Removes all dielectric layers that does not contain any technology
-        # layers except the bottom dielectric layer, which should be empty
+        """
+        Removes all dielectric layers that do not contain any technology layers except for the bottom dielectric layer, which should always be empty.
+        """
 
         numberOfNonEmptyLayers = 0
         for dlayer in self.project.geo.dlayers[:-1]:
@@ -1696,8 +1898,11 @@ class sonnet(object):
                 numberOfNonEmptyLayers += 1
 
     def collapseDlayers(self):
-        # Sends all tlayers, ports and components to the dlayer of index 0,
-        # and removes all dlayers except for the bottom two layers
+        """
+        Sends all technology layers, ports and components to the top dielectric layer (``dlayer_index = 0``) and removes all dielectric layers except for the two top layers.
+
+        This function is run after the GDSII translator for the following reason. Say the GDSII has a layer with gds stream number 23. This layer will become a technology layer in a dielectric layer of index 23, so a lot of empty dielectric layers are created in this process. This function removes these layers. After this operation there is an empty bottom dielctric layer (as there should be) and a single dielctric layer on top.
+        """
 
         tlayersAll = []
         portsAll = []
@@ -1722,7 +1927,7 @@ class sonnet(object):
                 component.smdp2_levelnum = 0
                 componentsAll.append(component)
 
-        # Remove all but the two bottom layers
+        # Remove all but the two top layers
         while len(self.project.geo.dlayers) > 2:
             del self.project.geo.dlayers[-1]
 
@@ -1733,9 +1938,21 @@ class sonnet(object):
         self.project.geo.box.nlev = 1
 
     def addDlayer(self, dlayer_index=0, **kwargs):
-        # Adds a dielectric layer with properties given in kwargs
-        # The ilevel of the new dlayer will be dlayer_index, by default
-        # the new layer is added to the top
+        """
+        Adds a dielectric layer to the project.
+
+        :param int dlayer_index: Index of the dielctric layer after the addition. By default the new layer is added to the top.
+
+        Keyword arguments:
+
+        :param float thickness: See [Son15]_ under BOX. Default is 0.
+        :param float erel: See [Son15]_ under BOX. Default is 1.
+        :param float mrel: See [Son15]_ under BOX. Default is 1.
+        :param float eloss: See [Son15]_ under BOX. Default is 0.
+        :param float mloss: See [Son15]_ under BOX. Default is 0.
+        :param float esignma: See [Son15]_ under BOX. Default is 0.
+        :param str name: See [Son15]_ under BOX. Default is ``"New layer"``.
+        """
 
         dlayerNew = Dlayer()
         dlayerNew.ilevel = dlayer_index
@@ -1781,8 +1998,21 @@ class sonnet(object):
         self.project.geo.box.nlev += 1
 
     def setDlayer(self, dlayer_index, **kwargs):
-        # Modifies the parameters of a dielectric layer of index dlayer_index.
-        # Only the parameters specified in kwargs are changed.
+        """
+        Sets the parameters of a dielectric layer to those specified by the keyword arguments. Only parameters given as keyword arguments are changed.
+
+        :param int dlayer_index: Index of the dielectric layer to modify.
+
+        Keyword arguments:
+
+        :param float thickness: See [Son15]_ under BOX.
+        :param float erel: See [Son15]_ under BOX.
+        :param float mrel: See [Son15]_ under BOX.
+        :param float eloss: See [Son15]_ under BOX.
+        :param float mloss: See [Son15]_ under BOX.
+        :param float esignma: See [Son15]_ under BOX.
+        :param str name: See [Son15]_ under BOX.
+        """
 
         if dlayer_index > len(self.project.geo.dlayers) - 1:
             raise self.error("Dlayer out of bound. Cannot set non-existing layer.")
@@ -1809,12 +2039,23 @@ class sonnet(object):
                 raise self.exception("Invalid keyword argument.")
 
     def setTlayer(self, tlayer_index, **kwargs):
-        # Modifies the parameters of a technology layer of index tlayer_index.
-        # Only the parameters specified in kwargs are changed.
-        # The technology layer can be moved to a different dielectric layer
-        # if dlayer_index is specfied (the destination dlayer index).
-        # VIA layers can also be given a different end layer by setting
-        # to_dlayer_index.
+        """
+        Sets the parameters of a technology layer to those specified by the keyword arguments. Only parameters given as keyword arguments are changed.
+
+        :param int tlayer_index: Index (gds stream number) of the technnology layer to modify.
+
+        Keyword arguments:
+
+        :param int dlayer_index: Index of the dielctric layer in which the technology layer reside.
+        :param int to_dlayer_index: Index of the dielectric layer a via technology layer extends to. Only for via technology layers.
+        :param str tlayer_type: The type of technology layer. Should be ``"metal"``, ``"via"`` or ``"brick"``. If a non-via layer is changed to via a value of ``to_dlayer_index`` should also be given.
+        :param str name: Name of the technology layer.
+        :param bool lossless: Toggle for lossless metal.
+        :param str filltype: Polygon filltype. Either ``"N"`` (staircase fill), ``"T"`` (diagonal fill) or ``"V"`` (conformal mesh). See [Son15]_ under NUM.
+        :param str edgemesh: Either ``"Y"`` (on) or ``"N"`` (off). See [Son15]_ under NUM.
+        :param str meshingfill: Either ``"RING"``, ``"CENTER"``, ``"VERTICES"``, ``"SOLID"`` or ``"BAR"``. See [Son15]_ under NUM.
+        :param str pads: Either ``"NOCOVERS"`` or ``"COVERS"``. See [Son15]_ under NUM.
+        """
 
         tlayerFound = False
 
@@ -1823,8 +2064,8 @@ class sonnet(object):
                 if tlayer.gds_stream == tlayer_index:
                     tlayerFound = True
                     for key, value in kwargs.items():
-                        # Setting the layer type
-                        if key == "lay_type":
+                        # Setting the layer type (lay_type)
+                        if key == "tlayer_type":
                             if value in ["METAL", "metal"]:
                                 tlayer.lay_type = value.upper()
                                 tlayer.type = "MET POL"
@@ -1851,7 +2092,7 @@ class sonnet(object):
                                     polygon.type = tlayer.type
                                     polygon.to_level = tlayer.to_level
                             else:
-                                raise self.exception("Invalid lay_type value.")
+                                raise self.exception("Invalid tlayer_type value.")
                         # If the tlayer is moved to a different dlayer, we
                         # also move the components (ports automatically follow)
                         elif key == "dlayer_index":
@@ -1907,6 +2148,16 @@ class sonnet(object):
     ########################################################################
 
     def setFrequencySweep(self, f1=5, f2=8, fstep=None):
+        """
+        Sets the frequency sweep to be run during the simulation.
+
+        :param float f1: Minimum frequency in the sweep.
+        :param float f2: Maximum frequency in the sweep.
+        :param fstep: The stepsize in a linear frequency sweep. If set to ``None`` an adaptive frequency sweep will run.
+        :type fstep: None or float
+        """
+
+        # Technical description for delevopers:
         # Redefines or adds the FREQ block with a single frequency sweep, and
         # sets this sweep as the current sweep in the CONTROL block
         # Currently, the following sweep types are implemented:
@@ -1940,6 +2191,19 @@ class sonnet(object):
         self.project.control = control
 
     def addParameter(self, parameter, unittype=None, **kwargs):
+        """
+        Adds a variable parameter to the project.
+
+        :param str parameter: Name of the parameter. If the name of an existing ideal component is given, the variable will be associated to that component's value.
+        :param str unittype: The unit type of the variable. See [Son15]_ under VALVAR. If ``parameter`` is the name of an existing ideal component, the unit type will be inherited from the component.
+
+        Keyword arguments:
+
+        :param float value: The value of the parameter. Default is 30. If ``parameter`` is the name of an existing component, the value will be inherited from the component.
+        :param str description: Description of the parameter. Default is empty quotes, ``""``.
+        """
+
+        # Technical description for delevopers:
         # Adds a variable parameter to the VALVAR block
 
         valvar = Valvar()
@@ -1970,6 +2234,26 @@ class sonnet(object):
         self.project.geo.valvars.append(valvar)
 
     def addParameterSweep(self, parameter, pmin, pmax, pstep, **kwargs):
+        """
+        Adds a parameter sweep to the project. Unless the keyword argument ``to_existing_sweep`` is given any previously set parameter sweeps will be overwritten. You can see the active sweeps set up in the project by running :func:`printParameters()`. The parameter sweep runs within a given frequency sweep, either previously set with :func:`setFrequencySweep` or given with keyword arguments. If no frequency sweep has been defined for the project, the default from :func:`setFrequencySweep` will be set.
+
+        :param str parameter: Name of the parameter to sweep. It must be the name of an existing parameter, for instance defined by :func:`addParameter`.
+        :param float pmin: Minimum parameter value in the sweep.
+        :param float pmax: Maximum parameter value in the sweep.
+        :param pstep: The stepsize in a linear sweep. If set to ``None`` an adaptive sweep will run.
+        :type pstep: None or float
+
+        Keyword arguments:
+
+        :param int to_existing_sweep: Index of an existing parameter sweep (1, 2, ect.). If given the parameter sweep is added to the existing parameter sweep such that several parameters will be sweept during the simulation.
+        :param str ytype: Type of sweep. Either ``"N"``, ``"Y"``, ``"YN"``, ``"YC"``, ``"YS"``, or ``"YE"``. See [Son15]_ under VARSWP.
+        :param float f1: Minimum frequency in the sweep.
+        :param float f2: Maximum frequency in the sweep.
+        :param fstep: The stepsize in a linear frequency sweep. If set to ``None`` an adaptive frequency sweep will run.
+        :type fstep: None or float
+        """
+
+        # Technical description for developers:
         # Adds a parameter sweep, where "parameter" must be the name of a
         # parameter in the VALVAR block.
         # By default a new sweep is created with a single parameter being
@@ -2054,9 +2338,23 @@ class sonnet(object):
     ########################################################################
 
     def setOutput(self, **kwargs):
-        # Creates or overwrites the FILEOUT block which specifies the
-        # file format of the output data file. By default a single
-        # spreadsheet file is creted with Sij data in dB-angle format.
+        """
+        Sets an output file for simulation data. By default a single spreadsheet file (.csv) is created with the same filename as the Sonnet project file. By default the data format is S-parameters given in dB and angles. See [Son15]_ under FILEOUT for other options.
+
+        Keyword arguments:
+
+        :param str filetype: See [Son15]_ under FILEOUT. Default is ``"CSV"``.
+        :param str embed: See [Son15]_ under FILEOUT. Default is ``"D"``.
+        :param str abs_inc: See [Son15]_ under FILEOUT. Default is ``"Y"``.
+        :param str filename: See [Son15]_ under FILEOUT. Default is ``"$BASENAME.csv"``.
+        :param str comments: See [Son15]_ under FILEOUT. Default is ``"NC"``.
+        :param int sig: See [Son15]_ under FILEOUT. Default is ``8``.
+        :param str partype: See [Son15]_ under FILEOUT. Default is ``"S"``.
+        :param str parform: See [Son15]_ under FILEOUT. Default is ``"DB"``.
+        :param str ports: See [Son15]_ under FILEOUT. Default is ``"R 50"``.
+        :param str folder: See [Son15]_ under FOLDER. Default is ``None``.
+        """
+
         # Only a geometry project output file of "Response" type is implemeted.
 
         fileout = Fileout()
@@ -2090,11 +2388,14 @@ class sonnet(object):
         self.project.fileout = fileout
 
     def getOutput(self, data="frequency", run=1):
-        # Look for a csv file containing data, return a list with the data
-        # specified by the user. The argument data can either be "frequency"
-        # or a valid response data type from the csv file, e.g. "MAG[S12]"...
-        # If the data contains a parameter sweep, then run is an integer
-        # that specifies the sweep number (run number) to be plotted.
+        """
+        Returns a list of data from the data resulting created after a Sonnet simulation. It is assumed that the data file is a .csv file, which is the default setting when running :func:`setOutput`. This function makes it easy to extract simulation data and plot it within Python.
+
+        :param str data: String specifying the data. It must follow the naming in the .csv file, for instance ``"MAG[S12]"`` for the magnitude of the S12-parameter. The default is frequency data.
+        :param int run: The sweep number if a parameter was swept during the simulation.
+
+        :returns: List of data.
+        """
 
         # Verify that the data file exists
         file_found = 0
@@ -2146,7 +2447,9 @@ class sonnet(object):
     ########################################################################
 
     def runSimulation(self):
-        # Run the Sonnet simulation without the pop-up status monitor
+        """
+        Runs the Sonnet simulation without the pop-up status monitor. This function also calls :func:`printProject()`, thereby saving any changes made in SonPy to the Sonnet project file before starting the simulation.
+        """
 
         # Print the Sonnet Project File
         self.printProject()
@@ -2174,7 +2477,6 @@ class sonnet(object):
 
         try:
             self.em_process = subprocess.Popen(args, stdout=subprocess.PIPE)
-            self.em_process.wait()
             self.run_count = self.run_count + 1
         except:
             print("Error! Can't start process, use setSonnetInstallationPath(path) to point the class to the location of your em.exe file")
@@ -2182,11 +2484,13 @@ class sonnet(object):
             self.done_flag = 1
             raise self.exception("Can not run sonnet executable file, file not found")
 
-            # Wait for the process to complete
+        # Wait for the process to complete
         self.em_process.wait()
 
     def runSimulationStatusMonitor(self):
-        # Run the Sonnet simulation with the pop-up status monitor
+        """
+        Runs the Sonnet simulation with the pop-up status monitor. This function also calls :func:`printProject()`, thereby saving any changes made in SonPy to the Sonnet project file before starting the simulation.
+        """
 
         # Print the Sonnet Project File
         self.printProject()
@@ -2225,6 +2529,8 @@ class sonnet(object):
         self.emstatus_process.wait()
 
     def getEmProcessID(self):
+        # Internal use only.
+
         # Based on SimulationStatusMonitor process 'emstatus.exe', find out child process 'em.exe'
 
         WMI = GetObject('winmgmts:')
@@ -2243,12 +2549,36 @@ class sonnet(object):
     ########################################################################
 
     def addComment(self, string):
-        # Add string as a comment at the top of the Sonnet project file
-        # Comments in Sonnet project files start with "!"
+        """
+        Adds a comment to the top of the Sonnet project file.
 
+        :param str string: Comment.
+        """
+
+        # Comments in Sonnet project files start with "!"
         self.project.preheader.insert(0, "! {:s}\n".format(string))
 
     def runMakeover(self):
+        """
+        Applies a series of other functions. This makeover function takes a GDSII file, runs it through a series of standardized tasks such that the project after the makeover is ready for adding ports, applying other specific settings and simulation.
+
+        The following operations are applied:
+
+        1. :func:`runGdsTranslator()`: Translate the GDSII file and read the project into SonPy.
+        2. Set the bottom dielectric layer to Silicon with the appropriate parameters.
+
+        Depending on the number of technology layers, we either create an air bridge, or we do not.
+
+        3. If there is only one technology layer (assumed to have gds stream 23), there is no air bridge, and the top layer is set to vacuum. The technology layer is set to lossless metal.
+
+        3. If there are three technology layers (assumed to have gds streams 23, 50 and 51), we create an air bridge from 50 (the top) and 51 (set to a via for bridge pillars). All technology layers are set to lossless metal. The top dielectric layer is made a thin vacuum at the bridge pillar level, and a new thick vacuum layer is added on top of the substrate.
+
+        4. :func:`setFrequencySweep()`: The default frequency sweep is set.
+
+        5. :func:`setOutput()`: The default output data file is set.
+
+        """
+
         # Applies a series of functions that takes to gds file into a
         # Sonnet file ready for adding ports and simulation
 
@@ -2283,7 +2613,7 @@ class sonnet(object):
         # Three tlayers means we make an air bridge
         elif len(self.project.geo.dlayers[0].tlayers) == 3:
             # Set a thin vacuum layer
-            self.setDlayer(0, thickness=500,\
+            self.setDlayer(0, thickness=2.9,\
                               erel=1,\
                               mrel=1,\
                               eloss=0,\
@@ -2302,7 +2632,7 @@ class sonnet(object):
             self.setTlayer(23, lossless=True)
             # Set the remaining two tlayers to the air bridge
             self.setTlayer(50, dlayer_index=0, lossless=True) # top of bridge
-            self.setTlayer(51, to_dlayer_index=0, lossless=True, lay_type="via") # via (bridge pillars)
+            self.setTlayer(51, to_dlayer_index=0, lossless=True, tlayer_type="via") # via (bridge pillars)
 
         else:
             raise self.exception("Unexpected number of technology layers.")
