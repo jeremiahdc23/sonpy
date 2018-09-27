@@ -1,0 +1,55 @@
+\begin{sphinxtheindex}
+\def\bigletter#1{{\Large\sffamily#1}\nopagebreak\vspace{1mm}}
+
+  \bigletter A
+  \item addBrick() (sonpy.sonnet method), \hyperpage{12}
+  \item addComment() (sonpy.sonnet method), \hyperpage{14}
+  \item addComponent() (sonpy.sonnet method), \hyperpage{10}
+  \item addDlayer() (sonpy.sonnet method), \hyperpage{11}
+  \item addParameter() (sonpy.sonnet method), \hyperpage{13}
+  \item addParameterSweep() (sonpy.sonnet method), \hyperpage{13}
+  \item addPort() (sonpy.sonnet method), \hyperpage{10}
+
+  \indexspace
+  \bigletter C
+  \item collapseDlayers() (sonpy.sonnet method), \hyperpage{11}
+  \item cropBox() (sonpy.sonnet method), \hyperpage{9}
+
+  \indexspace
+  \bigletter G
+  \item getOutput() (sonpy.sonnet method), \hyperpage{14}
+
+  \indexspace
+  \bigletter P
+  \item printLayers() (sonpy.sonnet method), \hyperpage{9}
+  \item printParameters() (sonpy.sonnet method), \hyperpage{9}
+  \item printProject() (sonpy.sonnet method), \hyperpage{9}
+
+  \indexspace
+  \bigletter R
+  \item readProject() (sonpy.sonnet method), \hyperpage{9}
+  \item removeDlayer() (sonpy.sonnet method), \hyperpage{11}
+  \item removeEmptyDlayers() (sonpy.sonnet method), \hyperpage{11}
+  \item runGdsTranslator() (sonpy.sonnet method), \hyperpage{9}
+  \item runMakeover() (sonpy.sonnet method), \hyperpage{14}
+  \item runSimulation() (sonpy.sonnet method), \hyperpage{14}
+  \item runSimulationStatusMonitor() (sonpy.sonnet method), \hyperpage{14}
+
+  \indexspace
+  \bigletter S
+  \item setDataFile() (sonpy.sonnet method), \hyperpage{9}
+  \item setDataFilePath() (sonpy.sonnet method), \hyperpage{9}
+  \item setDlayer() (sonpy.sonnet method), \hyperpage{11}
+  \item setFrequencySweep() (sonpy.sonnet method), \hyperpage{12}
+  \item setGdsFile() (sonpy.sonnet method), \hyperpage{8}
+  \item setGdsFilePath() (sonpy.sonnet method), \hyperpage{8}
+  \item setOutput() (sonpy.sonnet method), \hyperpage{14}
+  \item setSonnetFile() (sonpy.sonnet method), \hyperpage{8}
+  \item setSonnetFilePath() (sonpy.sonnet method), \hyperpage{8}
+  \item setSonnetInstallationPath() (sonpy.sonnet method), \hyperpage{8}
+  \item setTemplateFile() (sonpy.sonnet method), \hyperpage{9}
+  \item setTlayer() (sonpy.sonnet method), \hyperpage{12}
+  \item sonnet (class in sonpy), \hyperpage{8}
+  \item sonpy (module), \hyperpage{8}
+
+\end{sphinxtheindex}

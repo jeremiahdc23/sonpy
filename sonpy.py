@@ -41,6 +41,7 @@ class Geo():
         self.bmet = None
         self.met = None
         self.box = None
+        self.bricks = []  # Stores list of brick materials
         self.dlayers = []
         self.valvars = []
         self.lorgn = None
@@ -66,6 +67,13 @@ class Met():
         self.patternid = 0
         self.type = "SUP"
         self.values = [0, 0, 0, 0]
+
+class Brick():
+    def __init__(self):
+        self.name = "Air"
+        self.patternid = 0
+        self.values = [0, 0, 0]  # [Erel, Loss Tan, Cond] elements can be lists length 3 (isotropic) or length 9 (anisotropic)
+        self.isIsotropic = True
 
 class Box():
     def __init__(self):
@@ -537,7 +545,7 @@ class sonnet(object):
                             # Initialize top metal
                             params = line.split()
                             tmet = Tmet()
-                            tmet.name = params[1] # assume no spaces
+                            tmet.name = params[1]  # assume no spaces
                             tmet.patternid = int(params[2])
                             tmet.type = params[3]
                             tmet.values = []
@@ -550,7 +558,7 @@ class sonnet(object):
                             # Initialize bottom metal
                             params = line.split()
                             bmet = Bmet()
-                            bmet.name = params[1] # assume no spaces
+                            bmet.name = params[1]  # assume no spaces
                             bmet.patternid = int(params[2])
                             bmet.type = params[3]
                             bmet.values = []
@@ -570,6 +578,32 @@ class sonnet(object):
                             for params in params[4:]:
                                 met.values.append(float(params))
                             geo.met = met
+                            line = fd.readline()
+
+                        elif line.split()[0] == "BRI":
+                            # Initialize isotropic brick material
+                            params = line.split()
+                            bri = Brick()
+                            bri.name = params[1]  # assume no spaces
+                            bri.patternid = int(params[2])
+                            bri.isIsotropic = True
+                            bri.values = []
+                            for params in params[3:]:
+                                bri.values.append(float(params))
+                            geo.bricks.append(bri)
+                            line = fd.readline()
+
+                        elif line.split()[0] == "BRA":
+                            # Initialize anisotropic brick material
+                            params = line.split()
+                            bri = Brick()
+                            bri.name = params[1]  # assume no spaces
+                            bri.patternid = int(params[2])
+                            bri.isIsotropic = False
+                            bri.values = []
+                            for params in params[3:]:
+                                bri.values.append(float(params))
+                            geo.bricks.append(bri)
                             line = fd.readline()
 
                         elif line.split()[0] == "BOX":
@@ -611,6 +645,7 @@ class sonnet(object):
                             tlayer.lay_name = params[2]
                             tlayer.dxf_layer = params[3]
                             tlayer.gds_stream = int(params[4])
+                            print(tlayer.gds_stream)
                             tlayer.gds_object = int(params[5])
                             params = fd.readline().split()
                             if len(params) != 13:
@@ -770,7 +805,6 @@ class sonnet(object):
                                     yvertex = float(line.split()[1])
                                     polygon.vertices.append([xvertex, yvertex])
                                     line = fd.readline()
-                                #line = fd.readline()
                                 for dlayer in dlayers:
                                     for tlayer in dlayer.tlayers:
                                         if tlayer.gds_stream == polygon.gds_stream and \
@@ -1116,6 +1150,18 @@ class sonnet(object):
                     fd.write("{:n} ".format(value))
                 fd.write("\n")
 
+            bri = geo.bricks
+            if bri:
+                for bricks in bri:
+                    if bricks.isIsotropic:
+                        fd.write("BRI ")
+                    else:
+                        fd.write("BRA ")
+                    fd.write("\"{name}\" {patternid} ".format(**vars(bricks)))
+                    for value in bricks.values:
+                        fd.write("{:n} ".format(value))
+                    fd.write("\n")
+
             box = geo.box
             if box != None:
                 fd.write("BOX {nlev} {xwidth:n} {ywidth:n} {xcells2:n} {ycells2:n} {nsubs} {eeff:n}\n".format(**vars(box)))
@@ -1439,7 +1485,7 @@ class sonnet(object):
     #                         # Check if point lies along primary polygon edge (slow test)
     #
     #
-    # 
+    #
     #
     #                 # Update nvertices of the polygon
     #
@@ -2050,6 +2096,7 @@ class sonnet(object):
         :param int to_dlayer_index: Index of the dielectric layer a via technology layer extends to. Only for via technology layers.
         :param str tlayer_type: The type of technology layer. Should be ``"metal"``, ``"via"`` or ``"brick"``. If a non-via layer is changed to via a value of ``to_dlayer_index`` should also be given.
         :param str name: Name of the technology layer.
+        :param str brick_name: Name of the brick material. See [Son15]_ under BRI and BRA. Required if a brick tlayer is defined.
         :param bool lossless: Toggle for lossless metal.
         :param str filltype: Polygon filltype. Either ``"N"`` (staircase fill), ``"T"`` (diagonal fill) or ``"V"`` (conformal mesh). See [Son15]_ under NUM.
         :param str edgemesh: Either ``"Y"`` (on) or ``"N"`` (off). See [Son15]_ under NUM.
@@ -2073,9 +2120,19 @@ class sonnet(object):
                                     polygon.type = tlayer.type
                             elif value in ["BRICK", "brick"]:
                                 tlayer.lay_type = value.upper()
-                                tlayer.type = "BRI POL"
-                                for polygon in tlayer.polygons:
-                                    polygon.type = tlayer.type
+                                if "brick_name" not in kwargs.keys():
+                                    raise self.exception("You must define a brick_name for brick type tech layers.")
+                                brickFound = False
+                                for brick in self.project.geo.bricks:
+                                    if kwargs["brick_name"] == brick.name:
+                                        brickFound = True
+                                        tlayer.type = "BRI POL"
+                                        tlayer.mtype = self.project.geo.bricks.index(brick) + 1
+                                        for polygon in tlayer.polygons:
+                                            polygon.type = tlayer.type
+                                            polygon.mtype = tlayer.mtype
+                                if not brickFound:
+                                    raise NameError("Entered 'brick_name' not yet defined")
                             # Don't change anything if the layer is already VIA
                             elif value in ["VIA", "via"] and tlayer.lay_type == "VIA":
                                 pass
@@ -2137,11 +2194,78 @@ class sonnet(object):
                         # Handled with lay_type
                         elif key == "to_dlayer_index":
                             pass
+                        elif key == "brick_name":
+                            pass
                         else:
                             raise self.exception("Invalid keyword argument.")
 
         if tlayerFound == False:
             raise self.exception("Tlayer not found.")
+
+    def addBrick(self, erel=1, loss_tan=0, cond=0, name="Air"):
+        """
+        Adds a dielectric layer to the project.
+
+        :param erel: relative permitivity or [erelx, erely, erelz]
+	:type erel: float or list of floats of length 3
+        :param loss_tan: loss tangent or [erelx, erely, erelz]
+	:type loss_tan: float or list of floats of length 3
+        :param cond: conductivity or [erelx, erely, erelz]
+	:type cond: float or list of floats of length 3
+
+        """
+
+        # Check to see if inputs are floats or lists of floats with length three
+        try:
+            if not len(erel) == 3:
+                raise self.exception("erel is not either a float or a list of floats length three")
+            else:
+                for x in range(3):
+                    if not isinstance(erel[x], float) and not isinstance(erel[x], int):
+                        raise self.exception("erel is not either a float or a list of floats length three")
+        except TypeError:
+            if not isinstance(erel, float) and not isinstance(erel, int):
+                raise self.exception("erel is not either a float or a list of floats length three")
+            pass
+        try:
+            if not len(loss_tan) == 3:
+                raise self.exception("loss_tan is not either a float or a list of floats length three")
+            else:
+                for x in range(3):
+                    if not isinstance(loss_tan[x], float) and not isinstance(loss_tan[x], int):
+                        raise self.exception("loss_tan is not either a float or a list of floats length three")
+        except TypeError:
+            if not isinstance(loss_tan, float) and not isinstance(loss_tan, int):
+                raise self.exception("loss_tan is not either a float or a list of floats length three")
+            pass
+        try:
+            if not len(cond) == 3:
+                raise self.exception("cond is not either a float or a list of floats length three")
+            else:
+                for x in range(3):
+                    if not isinstance(cond[x], float) and not isinstance(cond[x], int):
+                        raise self.exception("cond is not either a float or a list of floats length three")
+        except TypeError:
+            if not isinstance(cond, float) and not isinstance(cond, int):
+                raise self.exception("cond is not either a float or a list of floats length three")
+            pass
+
+        newBrick = Brick()
+
+        if not isinstance(erel, list) and not isinstance(loss_tan, list) and not isinstance(cond, list):
+            newBrick.values = [erel, loss_tan, cond]  # Brick class default to isotropic
+        else:
+            newBrick.isIsotropic = False
+            params = []
+            for val in [erel, loss_tan, cond]:
+                if not isinstance(val, list):
+                    params.append([val, val, val])
+                else:
+                    params.append(val)
+            newBrick.values = [params[j][i] for i in range(3) for j in range(3)]  # Order values for sonnet syntax
+        newBrick.name = name
+        self.project.geo.bricks.append(newBrick)
+
 
     ########################################################################
     # FREQUENCY AND PARAMETER SWEEPS                                       #
