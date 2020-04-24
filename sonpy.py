@@ -1398,13 +1398,12 @@ class sonnet(object):
         lorgn.x = 0
         lorgn.y = ymax - ymin
         self.project.geo.lorgn = lorgn
-
         # Redefine the confining box (BOX)
-        self.project.geo.box.xcells2 = int(2*(xmax - xmin)/xcellsize)
-        self.project.geo.box.ycells2 = int(2*(ymax - ymin)/ycellsize)
+        self.project.geo.box.xcells2 = int(2*round(xmax - xmin)/xcellsize)
+        self.project.geo.box.ycells2 = int(2*round(ymax - ymin)/ycellsize)
 
-        self.project.geo.box.xwidth = int((xmax - xmin)/xcellsize)*xcellsize
-        self.project.geo.box.ywidth = int((ymax - ymin)/ycellsize)*ycellsize
+        self.project.geo.box.xwidth = int(round(xmax - xmin)/xcellsize)*xcellsize
+        self.project.geo.box.ywidth = int(round(ymax - ymin)/ycellsize)*ycellsize
 
         # Shift the circuit (all polygons, components and polygons)
         for dlayer in self.project.geo.dlayers:
