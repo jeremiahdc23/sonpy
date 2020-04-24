@@ -1633,7 +1633,7 @@ class sonnet(object):
         if len(candidateAttachments) == 0:
             raise self.exception("No polygon edges found to attach port to!")
         # Sort according to error and add the best attachment point to the port
-        candidateAttachments.sort(key=lambda item: item[2])
+        candidateAttachments.sort(key=lambda item: abs(item[2]))
         [ipolygon, ivertex, error, ilevel, xnew, ynew] = candidateAttachments[0]
         port.ipolygon = ipolygon
         port.ivertex = ivertex
