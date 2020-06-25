@@ -1365,6 +1365,28 @@ class sonnet(object):
     # PROJECT GEOMETRY (LAYERS, PORTS, COMPONENTS ECT.)                    #
     ########################################################################
 
+    def getBoundingBox(self):
+        """
+        Gets the bounding box for the polygons in the project.
+
+        """
+        xvertices, yvertices = [], []
+        for dlayer in self.project.geo.dlayers:
+            for tlayer in dlayer.tlayers:
+                for polygon in tlayer.polygons:
+                    # check if polygon is a sonnet glitch where all the points are the same
+                    glitched_polygon = all(x==polygon.vertices[0] for x in polygon.vertices)
+                    if not glitched_polygon:
+                        for vertex in polygon.vertices:
+                            xvertices.append(vertex[0])
+                            yvertices.append(vertex[1])
+
+        xmin, ymin = min(xvertices), min(yvertices)
+        xmax, ymax = max(xvertices), max(yvertices)
+
+        return[[xmin,ymin],[xmax,ymax]]
+
+
     def cropBox(self, xcellsize=1, ycellsize=1):
         """
         Crops the bounding box (used in Sonnet to confine the simulation space) to the circuit of the circuit.
@@ -1386,24 +1408,26 @@ class sonnet(object):
         for dlayer in self.project.geo.dlayers:
             for tlayer in dlayer.tlayers:
                 for polygon in tlayer.polygons:
-                    for vertex in polygon.vertices:
-                        xvertices.append(vertex[0])
-                        yvertices.append(vertex[1])
+                    # check if the polygon is a sonnet or gds glitch where all the points are the same
+                    glitched_polygon = all(x == polygon.vertices[0] for x in polygon.vertices)
+                    if not glitched_polygon:
+                        for vertex in polygon.vertices:
+                            xvertices.append(vertex[0])
+                            yvertices.append(vertex[1])
 
         xmin, ymin = min(xvertices), min(yvertices)
         xmax, ymax = max(xvertices), max(yvertices)
-
         # Define or redefine the local origin (LORGN)
         lorgn = Lorgn()
         lorgn.x = 0
         lorgn.y = ymax - ymin
         self.project.geo.lorgn = lorgn
         # Redefine the confining box (BOX)
-        self.project.geo.box.xcells2 = int(2*round(xmax - xmin)/xcellsize)
-        self.project.geo.box.ycells2 = int(2*round(ymax - ymin)/ycellsize)
+        self.project.geo.box.xcells2 = int(2*round((xmax - xmin)/xcellsize))
+        self.project.geo.box.ycells2 = int(2*round((ymax - ymin)/ycellsize))
 
-        self.project.geo.box.xwidth = int(round(xmax - xmin)/xcellsize)*xcellsize
-        self.project.geo.box.ywidth = int(round(ymax - ymin)/ycellsize)*ycellsize
+        self.project.geo.box.xwidth = int(round((xmax - xmin)/xcellsize))*xcellsize
+        self.project.geo.box.ywidth = int(round((ymax - ymin)/ycellsize))*ycellsize
 
         # Shift the circuit (all polygons, components and polygons)
         for dlayer in self.project.geo.dlayers:
@@ -2412,6 +2436,8 @@ class sonnet(object):
         else:
             psweep = Psweep()
             psweep.vars = [var]
+            if self.project.varswp == None:
+                self.project.varswp = Varswp()
             self.project.varswp.psweeps.append(psweep)
 
         # Copy the frequency sweep from the FREQ block

@@ -31,7 +31,7 @@ if __name__ == '__main__':
     # Set the technology layer properties (circuit and air bridges)
     snt.setTlayer(tlayer_index=23, dlayer_index=1, lossless=True)
     snt.setTlayer(tlayer_index=50, dlayer_index=0, lossless=True)
-    snt.setTlayer(tlayer_index=51, lay_type="via", dlayer_index=1, to_dlayer_index=0, lossless=True)
+    snt.setTlayer(tlayer_index=51, tlayer_type="via", dlayer_index=1, to_dlayer_index=0, lossless=True)
 
     # Add ports to the circuit
     snt.addPort(0, 216)
@@ -58,6 +58,8 @@ if __name__ == '__main__':
 
     # Save the S parameters in dB to example.csv
     snt.setOutput(filename="example.csv", partype="S", parform="DB")
+
+    snt.printProject()
 
     # When we are done with configuring our project, we run the simulation
     snt.runSimulationStatusMonitor()
