@@ -339,6 +339,24 @@ class sonnet(object):
         self.em_process = None
         self.emstatus_process = None
         self.project = None
+	
+    @staticmethod
+    def normalize_path(path):
+	"""
+	Normalizes the path name depending on current OS.
+	
+	:param str path: Any give path
+	"""
+	path_obj = pathlib.Path(path)
+        if not path_obj.is_dir():
+            raise ValueError(f"Expected directory; got {path}")
+	
+	if OS == 'Linux':
+            return f"{path_obj}/"
+	elif OS == 'Windows':
+	    if path_obj[-1] != '\\':
+            	path_obj += '\\'
+	    return path_obj
 
     ########################################################################
     # SET FILEPATHS AND FILENAMES                                          #
