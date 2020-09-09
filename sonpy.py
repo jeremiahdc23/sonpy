@@ -6,7 +6,11 @@ __docformat__ = 'reStructuredText'
 import subprocess
 import time
 import os
-from win32com.client import GetObject
+import platform
+OS = platform.system()
+
+if OS == "Windows":
+   from win32com.client import GetObject
 
 class Project():
     # Only geometry projects are supported
@@ -2682,17 +2686,23 @@ class sonnet(object):
         # Internal use only.
 
         # Based on SimulationStatusMonitor process 'emstatus.exe', find out child process 'em.exe'
-
-        WMI = GetObject('winmgmts:')
-        processes = WMI.InstancesOf('Win32_Process')
-        self.parentPID = int(self.emstatus_process.pid)
-        self.emPID = None
-        for process in processes:
-            parent = int(process.Properties_('ParentProcessId').Value)
-            child = int(process.Properties_('ProcessId').Value)
-            if (parent == self.parentPID):
-                self.emPID = child
-                break
+	if OS == 'Windows':
+		WMI = GetObject('winmgmts:')
+		processes = WMI.InstancesOf('Win32_Process')
+		self.parentPID = int(self.emstatus_process.pid)
+		self.emPID = None
+		for process in processes:
+		    parent = int(process.Properties_('ParentProcessId').Value)
+		    child = int(process.Properties_('ProcessId').Value)
+		    if (parent == self.parentPID):
+			self.emPID = child
+			break
+	elif OS == 'Linux':
+		self.parentPID = int(self.emstatus_process.pid)
+        	child = os.popen(f'pgrep -P {self.parentPID}').read()
+        	child = ''.join([c for c in child if c.isdigit()])
+        	self.emPID = int(child)
+		
 
     ########################################################################
     # MISCELLANEOUS FUNCTIONS                                              #
